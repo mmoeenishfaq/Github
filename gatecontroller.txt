@@ -1,0 +1,142 @@
+#include <SPI.h>
+#include <Ethernet.h>
+#include <Keypad.h>
+
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+ 
+IPAddress ip(192,168,100,200); //IP address for your arduino.
+
+char server[] = "ebmacshost.com"; //IP address of your computer.
+int led=11;
+int interrupt=0; //Variable to control the iterations of void loop().
+const byte ROWS = 4; //four rows
+const byte COLS = 4; //four columns
+char keys[ROWS][COLS] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+char pas[4];
+char data[5];
+int index=0;
+byte colPins[ROWS] = {5, 4, 3, 2}; //connect to the row pinouts of the keypad
+byte rowPins[COLS] = {9, 8, 7, 6}; //connect to the column pinouts of the keypad
+int datacount=0;
+Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+
+ 
+
+String rcv=""; //Variable in which the server response is recorded.
+
+EthernetClient client;
+
+void setup()
+{
+  
+  Serial.begin(9600);
+  
+  Ethernet.begin(mac, ip);
+  
+  delay(1000); //Wait for ethernet to connect.
+//  pinMode(IN1_PIN,INPUT);
+pinMode(led, OUTPUT);
+
+}
+
+
+
+void loop() 
+{
+//  byte input1_state = digitalRead(IN1_PIN);
+  
+
+  char key = keypad.getKey();
+ if(key)
+ {
+if(index<=16)
+{
+ data[index]=key;
+  //Serial.print(data[index]);
+ //pas[index]=data[index];
+ Serial.print(data[index]);
+ index++;
+
+
+
+
+}
+
+
+
+ }
+
+
+  if(index==4) 
+  { 
+    datasent();
+    index=0;
+  }
+     
+  }
+//  interrupt++;
+//  
+
+
+void datasent()
+{
+          delay(100);
+      if (client.connect(server, 80)) 
+      {
+      Serial.println("Connection Established 2");
+      client.print("GET /gatecontroller/info.php?"); //GET request to write data to the database.
+      client.print("request=");
+      client.print(data);
+      client.println(" HTTP/1.1"); 
+      client.println("Host: 192.168.137.1"); 
+      client.println("Connection: close"); 
+      client.println(); 
+      client.println(); 
+      //client.stop();
+
+unsigned long timeout = millis();
+    while (client.available() == 0) 
+    {
+      if (millis() - timeout > 25000) //If nothing is available on server for 25 seconds, close the connection.
+      { 
+        return;
+      }
+    }
+
+rcv="";
+    while(client.available())
+    {
+      String line = client.readStringUntil("Content-Type: text/plain");
+      //Read the server response line by line..
+     
+      rcv+=line; //And store it in rcv.
+      
+    }
+ 
+    Serial.println("Received string: ");
+  Serial.println(rcv);
+  unsigned int l=rcv.indexOf('*');
+  char j=rcv.charAt(l);
+  Serial.println("String=");
+  Serial.println(j);
+if(j=='*')
+{
+
+  digitalWrite(led, HIGH);
+}
+  else
+  {
+  digitalWrite(led, LOW);  
+  }
+   
+                  //client.stop(); // Close the connection.
+      }  
+  else
+  {
+  }
+} 
