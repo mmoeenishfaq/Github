@@ -1,0 +1,120 @@
+#include <ArduinoJson.h>
+
+#include <SPI.h>
+#include <Ethernet.h>
+
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+ 
+IPAddress ip(192,168,100,200); //IP address for your arduino.
+
+//char server[] = "50.87.232.142"; //IP address of your computer.
+char server[] = "ebmacshost.com";
+int interrupt=0; //Variable to control the iterations of void loop().
+int resetpin=4;
+
+//String mod="khan"; //Variable to be written on the database.
+#define IN1_PIN 7 
+
+String rcv=""; //Variable in which the server response is recorded.
+
+EthernetClient client;
+
+void setup()
+{
+digitalWrite(resetpin,HIGH);
+delay(200);  
+  Serial.begin(9600);
+  
+  Ethernet.begin(mac, ip);
+  
+  delay(100); //Wait for ethernet to connect.
+  pinMode(IN1_PIN,INPUT);
+  pinMode(resetpin,OUTPUT);
+delay(200);
+
+
+}
+
+
+
+
+void loop() 
+{
+
+
+  
+  byte input1_state = digitalRead(IN1_PIN);
+  if(input1_state==HIGH)
+  {
+       //Call the function to read the response from the server.
+      delay(100);
+      if (client.connect(server, 80)) 
+      {
+      Serial.println("Connection Established 2");
+      client.print("GET /ardino/info.php?"); //GET request to write data to the database.
+      client.print("request=");
+      client.print(input1_state);
+      client.println(" HTTP/1.1"); 
+      client.println("Host: 192.168.137.1"); 
+      client.println("Connection: close"); 
+      client.println(); 
+      client.println(); 
+      //client.stop();
+
+unsigned long timeout = millis();
+    while (client.available() == 0) 
+    {
+      if (millis() - timeout > 25000) //If nothing is available on server for 25 seconds, close the connection.
+      { 
+        return;
+      }
+    }
+
+rcv="";
+    while(client.available())
+    {
+      String line = client.readStringUntil("Content-Type: text/plain");
+      //Read the server response line by line..
+     
+      rcv+=line; //And store it in rcv.
+      
+    }
+ 
+    Serial.println("Received string: ");
+  Serial.println(rcv);
+  unsigned int l=rcv.indexOf('*');
+  char j=rcv.charAt(l);
+  Serial.println("String=");
+  Serial.println(j);
+//  int lengths= rcv.length();
+//  Serial.println(lengths);
+//     char c=rcv.charAt(lengths-1);
+//     Serial.println("asdf="+c);
+//     int t=rcv.indexOf('k');
+//     Serial.println("daf");
+//     Serial.println(t);
+  //rcv.substring
+                 //Display the server response.
+  
+   
+                  //client.stop(); // Close the connection.
+      }  
+  else
+  {
+  }
+  
+  
+
+
+
+
+
+       
+     
+
+      }
+     
+  }
+
+
+ 
